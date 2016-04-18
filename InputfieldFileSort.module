@@ -1,0 +1,104 @@
+<?php
+/**
+ * ProcessWire PageListSelectUnselectButton
+ *
+ * Copyright (C) 2016 by Bernhard Baumrock
+ * This file licensed under MIT License
+ */
+
+class InputfieldFileSort extends WireData implements Module {
+
+    /**
+     * getModuleInfo is a module required by all modules to tell ProcessWire about them
+     *
+     * @return array
+     *
+     */
+    public static function getModuleInfo() {
+
+        return array(
+            'title' => 'InputfieldFileSort',
+            'version' => 1,
+            'summary' => 'Sort Files of an InputfieldFile via Javascript',
+            'href' => 'https://processwire.com',
+            'singular' => true,
+            'autoload' => true,
+            'icon' => 'sort-alpha-asc', 
+            );
+
+        /**
+         * todo
+         * 
+         * charOrder for other languages
+         * option to sort automatically
+         **/
+    }
+
+    /**
+     * Initialize the module
+     */
+    public function init() {
+        // add the main scripts
+        $this->addHookBefore('Page::render', $this, 'addscripts');
+
+        // add autosort config to field edit screen
+        $this->addHookAfter('InputfieldFile::getConfigInputfields', $this, 'hookConfig');
+        $this->addHookProperty("InputfieldFile::autosort", $this, "addProperty");
+
+        // adjust field markup
+        $this->addHookBefore('InputfieldFile::render', $this, 'hookFieldMarkup');
+    }
+
+    // from https://processwire.com/talk/topic/9462-adding-a-configuration-setting-to-an-existing-module-with-a-hook/?p=91149
+    public function addProperty(HookEvent $event) {
+         $event->return = 0;
+    }
+
+    /**
+     * add scripts
+     */
+    public function addscripts($event) {
+        // add tinysort plugin
+        $v = $this->getModuleInfo();
+        $v = $v['version'];
+        $this->config->scripts->add($this->config->urls->siteModules . $this->className . '/TinySort/tinysort.min.js?v=' . $v);
+        $this->config->scripts->add($this->config->urls->siteModules . $this->className . '/InputfieldFileSort.js?v=' . $v);
+        $this->config->styles->add($this->config->urls->siteModules . $this->className . '/InputfieldFileSort.css?v=' . $v);
+    }
+
+
+    /**
+     * Adds additional options to the Inputfield edit screen.
+     *
+     */
+    public function hookConfig(HookEvent $event){
+        $fields = $event->return;
+        $field = $event->object;
+        $modules = wire("modules");
+
+        $f = $modules->InputfieldRadios;
+        $f->attr('name', 'autosort');
+        $f->label = $this->_('Autosort settings');
+        $f->description = $this->_('The sorting is triggered after each fileupload.');
+        $f->icon = "fa-sort-alpha-asc";
+        
+        $f->addOption('disabled', $this->_('disabled'));
+        $f->addOption('asc', $this->_('ascending'));
+        $f->addOption('desc', $this->_('descending'));
+
+        $f->attr('value', ($field->autosort) ?: 'disabled'); 
+        $f->optionColumns = 1; 
+        $f->collapsed = true;
+
+        $fields->add($f);
+    }
+
+    /**
+     * hook field markup
+     */
+    public function hookFieldMarkup(HookEvent $event){
+        $field = $event->object;
+        $field->addClass('autosort-'.$field->autosort);
+        $event->return = $field;
+    }
+}
