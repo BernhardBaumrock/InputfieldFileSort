@@ -18,7 +18,7 @@ class InputfieldFileSort extends WireData implements Module {
 
         return array(
             'title' => 'InputfieldFileSort',
-            'version' => 1,
+            'version' => 100,
             'summary' => 'Sort Files of an InputfieldFile via Javascript',
             'href' => 'https://processwire.com',
             'singular' => true,
